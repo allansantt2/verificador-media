@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎮 Colete as Moedas</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; font-family:Arial,sans-serif;
+  background:#111b29; color:white; text-align:center; overflow-x:hidden;
+}
+h1{font-size:clamp(28px,7vw,44px); margin:22px 8px 4px}
+.subtitle{font-size:clamp(17px,4.5vw,24px); margin:0 12px 12px}
+.hud{
+  display:flex; justify-content:center; gap:24px; flex-wrap:wrap;
+  font-size:clamp(19px,5vw,28px); margin-bottom:12px
+}
+.hud b{color:#ffd21c}
+.game{
+  position:relative; width:min(94vw,900px); height:min(58vw,520px); min-height:300px;
+  margin:auto; overflow:hidden; border:7px solid white; border-radius:25px;
+  background:
+    radial-gradient(circle at 12% 20%, #77b82a 0 3px, transparent 4px),
+    radial-gradient(circle at 82% 24%, #9bc83a 0 3px, transparent 4px),
+    radial-gradient(circle at 65% 76%, #6ba925 0 4px, transparent 5px),
+    linear-gradient(#67ad25,#8bc83b 55%,#65ad27);
+}
+.grass{
+  position:absolute; inset:0;
+  background-image:
+    radial-gradient(ellipse at 20% 35%,rgba(255,255,255,.28) 0 2px,transparent 3px),
+    radial-gradient(ellipse at 70% 15%,rgba(255,255,255,.25) 0 2px,transparent 3px);
+  opacity:.55;
+}
+.path{
+  position:absolute; left:-3%; width:106%; top:50%; height:125px; transform:translateY(-50%);
+  display:flex; align-items:stretch; overflow:hidden;
+}
+.stone{
+  flex:0 0 78px; border:2px solid #77786d; margin:1px;
+  border-radius:10px; background:linear-gradient(145deg,#aaa99a,#77786c);
+  box-shadow:inset 4px 4px 0 rgba(255,255,255,.22), inset -5px -5px 0 rgba(0,0,0,.13);
+}
+.coin{
+  position:absolute; top:50%; transform:translate(-50%,-50%);
+  width:58px; height:58px; border-radius:50%;
+  background:radial-gradient(circle,#ffe77a 0 22%,#ffc400 23% 62%,#e09a00 63% 100%);
+  border:4px solid #fff1a8; box-shadow:0 0 14px #ffd21c, 0 3px 4px rgba(0,0,0,.35);
+  z-index:4; font-size:30px; line-height:50px; color:#fff;
+  transition:transform .15s, opacity .2s;
+}
+.coin.collected{opacity:0; transform:translate(-50%,-50%) scale(1.8)}
+.player{
+  position:absolute; z-index:6; top:50%; left:35px; transform:translateY(-57%);
+  width:75px; height:100px; font-size:70px; line-height:100px;
+  filter:drop-shadow(2px 4px 2px rgba(0,0,0,.4));
+  transition:left .06s linear;
+}
+.player.running{animation:bob .18s infinite alternate}
+@keyframes bob{from{transform:translateY(-57%) rotate(-2deg)}to{transform:translateY(-62%) rotate(2deg)}}
+.spark{position:absolute; z-index:8; font-size:28px; pointer-events:none; animation:pop .55s forwards}
+@keyframes pop{0%{opacity:1;transform:translateY(0) scale(.5)}100%{opacity:0;transform:translateY(-45px) scale(1.4)}}
+button{
+  margin:22px 0 8px; padding:18px 42px; border:0; border-radius:18px;
+  font-size:22px; font-weight:800; cursor:pointer; background:#fff; color:#111;
+  box-shadow:0 5px 0 #bbb;
+}
+button:active{transform:translateY(4px);box-shadow:0 1px 0 #999}
+.message{font-size:20px; margin:4px 10px 20px; min-height:28px}
+.instructions{font-size:16px;opacity:.85;margin:8px 15px 24px}
+.finish{
+  position:absolute; right:10px; top:50%; transform:translateY(-92%);
+  z-index:5; font-size:52px;
+}
+@media(max-width:520px){
+  .game{height:420px; min-height:420px}
+  .path{height:105px}
+  .stone{flex-basis:62px}
+  .coin{width:48px;height:48px;font-size:25px;line-height:40px}
+  .player{font-size:58px;width:62px}
+}
+</style>
+</head>
+<body>
+<h1>🎮 Colete as Moedas</h1>
+<div class="subtitle">Ajude o personagem a chegar ao final do caminho!</div>
+<div class="hud">
+  <span>Pontos: <b id="score">0</b></span>
+  <span>Tempo: <b id="time">30</b>s</span>
+  <span>🪙 <b id="count">0</b>/<b id="total">10</b></span>
+</div>
+
+<div class="game" id="game">
+  <div class="grass"></div>
+  <div class="path" id="path"></div>
+  <div class="finish">🏁</div>
+  <div class="player" id="player">🏃</div>
+</div>
+
+<button id="start">COMEÇAR</button>
+<div class="message" id="message">Clique em COMEÇAR para iniciar!</div>
+<div class="instructions">O personagem caminha sozinho pelo caminho e coleta as moedas ao passar por elas.</div>
+
+<script>
+const game=document.getElementById('game');
+const player=document.getElementById('player');
+const scoreEl=document.getElementById('score');
+const timeEl=document.getElementById('time');
+const countEl=document.getElementById('count');
+const totalEl=document.getElementById('total');
+const startBtn=document.getElementById('start');
+const msg=document.getElementById('message');
+
+for(let i=0;i<16;i++){
+  const s=document.createElement('div'); s.className='stone'; document.getElementById('path').appendChild(s);
+}
+
+const coinPositions=[17,28,39,50,61,72,82,91,99,107];
+let coins=[], running=false, score=0, collected=0, time=30, startTime, raf, timer;
+
+function makeCoins(){
+  document.querySelectorAll('.coin').forEach(c=>c.remove());
+  coins=[];
+  const w=game.clientWidth;
+  coinPositions.forEach((p,i)=>{
+    const c=document.createElement('div');
+    c.className='coin'; c.textContent='★';
+    c.style.left=p+'%';
+    game.appendChild(c);
+    coins.push({el:c,x:w*p/100,collected:false});
+  });
+}
+function reset(){
+  cancelAnimationFrame(raf); clearInterval(timer);
+  score=0; collected=0; time=30; running=false;
+  scoreEl.textContent=0; countEl.textContent=0; timeEl.textContent=30;
+  player.style.left='28px'; player.classList.remove('running');
+  msg.textContent='Clique em COMEÇAR para iniciar!';
+  startBtn.textContent='COMEÇAR';
+  makeCoins();
+}
+function sparkle(x){
+  const e=document.createElement('div'); e.className='spark'; e.textContent='✨';
+  e.style.left=x+'px'; e.style.top=(game.clientHeight/2-45)+'px';
+  game.appendChild(e); setTimeout(()=>e.remove(),600);
+}
+function finish(text){
+  running=false; cancelAnimationFrame(raf); clearInterval(timer);
+  player.classList.remove('running');
+  msg.textContent=text;
+  startBtn.textContent='JOGAR NOVAMENTE';
+}
+function loop(now){
+  if(!running)return;
+  const elapsed=(now-startTime)/1000;
+  time=Math.max(0,30-Math.floor(elapsed));
+  timeEl.textContent=time;
+  const duration=27000; // caminhada em 27s
+  const progress=Math.min(1,elapsed*1000/duration);
+  const maxX=game.clientWidth-75;
+  const x=28+(maxX-28)*progress;
+  player.style.left=x+'px';
+  coins.forEach(c=>{
+    if(!c.collected && Math.abs((x+35)-c.x)<45){
+      c.collected=true; c.el.classList.add('collected');
+      score+=10; collected++;
+      scoreEl.textContent=score; countEl.textContent=collected;
+      sparkle(c.x);
+    }
+  });
+  if(progress>=1){
+    finish(collected===coins.length
+      ? '🏆 Parabéns! Você coletou todas as moedas!'
+      : `🏁 Fim do caminho! Você coletou ${collected} moeda(s).`);
+    return;
+  }
+  if(time<=0){finish(`⏰ Tempo esgotado! Você fez ${score} pontos.`);return;}
+  raf=requestAnimationFrame(loop);
+}
+function start(){
+  reset(); running=true; startBtn.textContent='JOGANDO...'; player.classList.add('running');
+  msg.textContent='🏃 O personagem está caminhando!';
+  startTime=performance.now();
+  raf=requestAnimationFrame(loop);
+}
+startBtn.addEventListener('click',()=>{if(!running)start()});
+window.addEventListener('resize',()=>{if(!running)makeCoins()});
+reset();
+</script>
+</body>
+</html>
