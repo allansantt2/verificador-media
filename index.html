@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verificador de Média</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Arial,sans-serif;background:linear-gradient(135deg,#eef2ff,#f8fafc)}
+.card{width:100%;max-width:440px;background:white;padding:28px;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.12);text-align:center}
+h1{margin:0 0 8px;color:#172554;font-size:30px}
+.subtitle{color:#64748b;margin:0 0 25px;font-size:17px}
+label{display:block;text-align:left;font-weight:bold;margin:12px 0 7px;color:#111827}
+input{width:100%;padding:14px;border:2px solid #cbd5e1;border-radius:12px;font-size:18px;outline:none}
+input:focus{border-color:#2563eb}
+button{width:100%;margin-top:20px;padding:15px;border:0;border-radius:12px;font-size:17px;font-weight:bold;cursor:pointer;background:#2563eb;color:white}
+button:active{transform:scale(.99)}
+#resultado{margin-top:20px;padding:16px;border-radius:12px;font-size:20px;font-weight:bold;min-height:24px}
+.aprovado{background:#dcfce7;color:#166534}
+.reprovado{background:#fee2e2;color:#991b1b}
+.erro{background:#e2e8f0;color:#334155}
+</style>
+</head>
+<body>
+<main class="card">
+<h1>📚 Verificador de Média</h1>
+<p class="subtitle">Descubra sua situação acadêmica</p>
+
+<label for="nota1">Digite a primeira nota:</label>
+<input id="nota1" type="text" inputmode="decimal" placeholder="Ex.: 7,5">
+
+<label for="nota2">Digite a segunda nota:</label>
+<input id="nota2" type="text" inputmode="decimal" placeholder="Ex.: 6,0">
+
+<label for="nota3">Digite a terceira nota:</label>
+<input id="nota3" type="text" inputmode="decimal" placeholder="Ex.: 8,0">
+
+<label for="nota4">Digite a quarta nota:</label>
+<input id="nota4" type="text" inputmode="decimal" placeholder="Ex.: 5,5">
+
+<button onclick="calcular()">CALCULAR MÉDIA</button>
+<div id="resultado"></div>
+</main>
+
+<script>
+function calcular(){
+const campos=[document.getElementById("nota1"),document.getElementById("nota2"),document.getElementById("nota3"),document.getElementById("nota4")];
+const texto=campos.map(c=>c.value.trim());
+const valores=texto.map(v=>Number(v.replace(",",".")));
+const resultado=document.getElementById("resultado");
+resultado.className="";
+if(texto.some(v=>v==="")||valores.some(v=>Number.isNaN(v))){
+resultado.textContent="Digite as 4 notas.";
+resultado.className="erro";return;
+}
+if(valores.some(v=>v<0||v>10)){
+resultado.textContent="As notas devem estar entre 0 e 10.";
+resultado.className="erro";return;
+}
+const media=(valores[0]+valores[1]+valores[2]+valores[3])/4;
+const textoMedia=media.toFixed(2).replace(".",",");
+if(media>=5){
+resultado.textContent="Sua média foi: "+textoMedia+" — 🟢 Aprovado!";
+resultado.className="aprovado";
+}else{
+resultado.textContent="Sua média foi: "+textoMedia+" — 🔴 Reprovado";
+resultado.className="reprovado";
+}
+}
+document.querySelectorAll("input").forEach((input,index,inputs)=>{
+input.addEventListener("keydown",function(e){
+if(e.key==="Enter"){
+if(index<inputs.length-1)inputs[index+1].focus();else calcular();
+}
+});
+});
+</script>
+</body>
+</html>
